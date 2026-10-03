@@ -225,3 +225,108 @@ class TestLUErrors:
         b = np.array([1.0, 2.0])
         with pytest.raises(InvalidInputError, match="shape"):
             lu_solve(fact, b)
+
+
+# ======================================================================
+# Iterative solvers
+# ======================================================================
+from numerical_lab.core import ConvergenceError
+from numerical_lab.linear_systems import gauss_seidel, jacobi
+
+
+def _diag_dominant(n: int, seed: int = 0) -> np.ndarray:
+    """Generate a strictly diagonally dominant matrix."""
+    rng = np.random.default_rng(seed)
+    A = rng.standard_normal((n, n))
+    # Enforce strict diagonal dominance
+    for i in range(n):
+        A[i, i] = np.sum(np.abs(A[i])) + 1.0
+    return A
+
+
+class TestJacobi:
+    def test_2x2(self) -> None:
+        A = np.array([[4.0, 1.0], [1.0, 3.0]])
+        b = np.array([1.0, 2.0])
+        res = jacobi(A, b, tol=1e-10)
+        assert np.allclose(A @ res.solution, b, atol=1e-8)
+
+    def test_matches_scipy(self) -> None:
+        from scipy.linalg import solve as scipy_solve
+
+        for n in [5, 10, 20]:
+            A = _diag_dominant(n, seed=n)
+            b = np.random.default_rng(n).standard_normal(n)
+            ours = jacobi(A, b, tol=1e-12)
+            ref = scipy_solve(A, b)
+            assert np.allclose(ours.solution, ref, atol=1e-8)
+
+    def test_convergence_monotone_step(self) -> None:
+        """Steps should decrease toward zero."""
+        A = _diag_dominant(10, seed=1)
+        b = np.ones(10)
+        res = jacobi(A, b, tol=1e-10)
+        # First step > last step
+        assert res.history[0] > res.history[-1]
+
+    def test_does_not_converge_without_diag_dominance(self) -> None:
+        """A poorly conditioned matrix may diverge → ConvergenceError."""
+        A = np.array([[1.0, 2.0], [2.0, 1.0]])  # not diag dominant
+        b = np.array([1.0, 1.0])
+        with pytest.raises(ConvergenceError):
+            jacobi(A, b, max_iter=50, tol=1e-12)
+
+
+class TestGaussSeidel:
+    def test_2x2(self) -> None:
+        A = np.array([[4.0, 1.0], [1.0, 3.0]])
+        b = np.array([1.0, 2.0])
+        res = gauss_seidel(A, b, tol=1e-10)
+        assert np.allclose(A @ res.solution, b, atol=1e-8)
+
+    def test_matches_scipy(self) -> None:
+        from scipy.linalg import solve as scipy_solve
+
+        for n in [5, 10, 20]:
+            A = _diag_dominant(n, seed=n)
+            b = np.random.default_rng(n).standard_normal(n)
+            ours = gauss_seidel(A, b, tol=1e-12)
+            ref = scipy_solve(A, b)
+            assert np.allclose(ours.solution, ref, atol=1e-8)
+
+    def test_faster_than_jacobi(self) -> None:
+        """Gauss-Seidel typically converges in fewer iterations than Jacobi."""
+        A = _diag_dominant(20, seed=42)
+        b = np.ones(20)
+
+        res_jac = jacobi(A, b, tol=1e-10)
+        res_gs = gauss_seidel(A, b, tol=1e-10)
+
+        # GS should be at least 1.5x faster in iterations
+        assert res_gs.iterations < res_jac.iterations / 1.5
+
+
+class TestIterativeErrors:
+    def test_non_square(self) -> None:
+        A = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+        b = np.array([1.0, 2.0])
+        with pytest.raises(InvalidInputError, match="must be square"):
+            jacobi(A, b)
+
+    def test_zero_diagonal(self) -> None:
+        A = np.array([[0.0, 1.0], [1.0, 2.0]])
+        b = np.array([1.0, 2.0])
+        with pytest.raises(InvalidInputError, match="zero on its diagonal"):
+            jacobi(A, b)
+
+    def test_wrong_b_shape(self) -> None:
+        A = np.eye(3)
+        b = np.array([1.0, 2.0])
+        with pytest.raises(InvalidInputError, match="shape"):
+            jacobi(A, b)
+
+    def test_negative_tolerance(self) -> None:
+        A = np.eye(2)
+        b = np.ones(2)
+        with pytest.raises(InvalidInputError, match="tol must be positive"):
+            gauss_seidel(A, b, tol=-1.0)
