@@ -104,3 +104,105 @@ class TestEulerErrors:
         f = lambda t, y: np.array([1.0, 2.0])  # y has shape (1,)
         with pytest.raises(InvalidInputError, match="f returned shape"):
             euler(f, (0.0, 1.0), [1.0], h=0.1)
+
+
+# ======================================================================
+# RK4
+# ======================================================================
+from numerical_lab.ode import rk4, rk45
+
+
+class TestRK4Basic:
+    def test_exponential_growth(self) -> None:
+        f = lambda t, y: y
+        res = rk4(f, (0.0, 1.0), [1.0], h=0.1)
+        assert np.allclose(res.solution, [np.e], rtol=1e-5)
+
+    def test_much_better_than_euler(self) -> None:
+        """Same h → RK4 error should be ~1000x smaller than Euler."""
+        f = lambda t, y: y
+        res_euler = euler(f, (0.0, 2.0), [1.0], h=0.5)
+        res_rk4 = rk4(f, (0.0, 2.0), [1.0], h=0.5)
+        exact = np.e**2
+        err_euler = abs(res_euler.solution[0] - exact)
+        err_rk4 = abs(res_rk4.solution[0] - exact)
+        assert err_rk4 < err_euler / 100
+
+    def test_fourth_order_convergence(self) -> None:
+        """RK4 is order 4: error ~ C * h^4."""
+        f = lambda t, y: y
+        exact = np.e
+
+        errors = []
+        for h in [0.2, 0.1, 0.05, 0.025]:
+            res = rk4(f, (0.0, 1.0), [1.0], h=h)
+            errors.append(abs(res.solution[0] - exact))
+
+        # Ratio should be ~16 (= 2^4)
+        for i in range(len(errors) - 1):
+            ratio = errors[i] / errors[i + 1]
+            assert 10 < ratio < 25
+
+    def test_matches_scipy(self) -> None:
+        f = lambda t, y: y
+        res = rk4(f, (0.0, 1.0), [1.0], h=0.01)
+        # h=0.01 → RK4 error ~h^4 ~ 1e-8, so rtol=1e-6 is plenty
+        assert np.allclose(res.solution, [np.e], rtol=1e-6)
+
+    def test_harmonic_oscillator(self) -> None:
+        f = lambda t, y: np.array([y[1], -y[0]])
+        res = rk4(f, (0.0, 10.0), [1.0, 0.0], h=0.01)
+        # cos(10) ≈ -0.839, -sin(10) ≈ 0.544
+        assert np.allclose(res.solution, [np.cos(10.0), -np.sin(10.0)], atol=1e-6)
+
+
+class TestRK4Errors:
+    def test_invalid_t_span(self) -> None:
+        with pytest.raises(InvalidInputError, match="Require t0 < tf"):
+            rk4(lambda t, y: y, (1.0, 0.0), [1.0], h=0.1)
+
+    def test_negative_h(self) -> None:
+        with pytest.raises(InvalidInputError, match="h must be positive"):
+            rk4(lambda t, y: y, (0.0, 1.0), [1.0], h=-0.1)
+
+
+# ======================================================================
+# RK45 — adaptive
+# ======================================================================
+class TestRK45Basic:
+    def test_exponential_growth(self) -> None:
+        f = lambda t, y: y
+        res = rk45(f, (0.0, 1.0), [1.0], rtol=1e-8)
+        assert np.allclose(res.solution, [np.e], rtol=1e-6)
+
+    def test_matches_scipy_high_precision(self) -> None:
+        f = lambda t, y: y
+        res = rk45(f, (0.0, 1.0), [1.0], rtol=1e-10, atol=1e-12)
+        assert np.allclose(res.solution, [np.e], rtol=1e-6)
+
+    def test_adapts_step_size(self) -> None:
+        """Step sizes should vary — not all equal."""
+        f = lambda t, y: y
+        res = rk45(f, (0.0, 1.0), [1.0], rtol=1e-6)
+        # history = step sizes taken
+        steps = res.history
+        assert len(steps) > 2
+        # On smooth y' = y, step should grow — variance exists
+        assert max(steps) > min(steps) * 1.5
+
+    def test_uses_fewer_steps_than_fixed_rk4(self) -> None:
+        """Adaptive should need fewer steps than fixed h=1e-4."""
+        f = lambda t, y: y
+        res_adaptive = rk45(f, (0.0, 1.0), [1.0], rtol=1e-8)
+        n_fixed = int(1.0 / 1e-4)  # 10000 for fixed h=1e-4
+        assert res_adaptive.iterations < n_fixed / 10
+
+
+class TestRK45Errors:
+    def test_invalid_t_span(self) -> None:
+        with pytest.raises(InvalidInputError, match="Require t0 < tf"):
+            rk45(lambda t, y: y, (1.0, 0.0), [1.0])
+
+    def test_invalid_tolerances(self) -> None:
+        with pytest.raises(InvalidInputError, match="must be positive"):
+            rk45(lambda t, y: y, (0.0, 1.0), [1.0], rtol=-1e-6)
