@@ -136,3 +136,92 @@ class TestGaussRobustness:
         b = A @ x_true
         res = gauss_solve(A, b)
         assert np.allclose(res.solution, x_true, atol=1e-10)
+
+
+# ======================================================================
+# LU decomposition
+# ======================================================================
+from scipy.linalg import lu_factor as scipy_lu_factor
+from scipy.linalg import lu_solve as scipy_lu_solve
+
+from numerical_lab.linear_systems import lu_factor, lu_solve
+
+
+class TestLUFactor:
+    def test_2x2_factorization(self) -> None:
+        """P A = L U identity."""
+        A = np.array([[2.0, 1.0], [1.0, 3.0]])
+        fact = lu_factor(A)
+        assert np.allclose(fact.P @ A, fact.L @ fact.U)
+        # L unit lower-triangular
+        assert np.allclose(np.diag(fact.L), 1.0)
+        assert np.allclose(np.triu(fact.L, 1), 0.0)
+        # U upper-triangular
+        assert np.allclose(np.tril(fact.U, -1), 0.0)
+
+    def test_matches_scipy(self) -> None:
+        """Compare LU factors with scipy (up to row swaps)."""
+        rng = np.random.default_rng(42)
+        for n in [3, 5, 10]:
+            A = rng.standard_normal((n, n)) + n * np.eye(n)
+            ours = lu_factor(A)
+            # Reconstruct
+            assert np.allclose(ours.P @ A, ours.L @ ours.U, atol=1e-10)
+
+    def test_determinant(self) -> None:
+        """det(A) from LU matches numpy."""
+        rng = np.random.default_rng(0)
+        for n in [3, 5, 10]:
+            A = rng.standard_normal((n, n)) + n * np.eye(n)
+            fact = lu_factor(A)
+            assert np.isclose(fact.determinant(), np.linalg.det(A), rtol=1e-8)
+
+
+class TestLUSolve:
+    def test_solve_2x2(self) -> None:
+        A = np.array([[2.0, 1.0], [1.0, 3.0]])
+        b = np.array([3.0, 4.0])
+        fact = lu_factor(A)
+        res = lu_solve(fact, b)
+        assert np.allclose(res.solution, [1.0, 1.0])
+
+    def test_matches_scipy(self) -> None:
+        rng = np.random.default_rng(7)
+        for n in [3, 10, 30]:
+            A = rng.standard_normal((n, n)) + n * np.eye(n)
+            b = rng.standard_normal(n)
+            fact = lu_factor(A)
+            ours = lu_solve(fact, b)
+            ref = scipy_lu_solve(scipy_lu_factor(A), b)
+            assert np.allclose(ours.solution, ref, atol=1e-9)
+
+    def test_reuse_for_multiple_b(self) -> None:
+        """Same A, different b — must give consistent solutions."""
+        rng = np.random.default_rng(1)
+        n = 10
+        A = rng.standard_normal((n, n)) + n * np.eye(n)
+        fact = lu_factor(A)
+        for _ in range(5):
+            b = rng.standard_normal(n)
+            res = lu_solve(fact, b)
+            # Verify A x = b
+            assert np.allclose(A @ res.solution, b, atol=1e-9)
+
+
+class TestLUErrors:
+    def test_non_square(self) -> None:
+        A = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+        with pytest.raises(InvalidInputError, match="must be square"):
+            lu_factor(A)
+
+    def test_singular(self) -> None:
+        A = np.array([[1.0, 2.0], [2.0, 4.0]])
+        with pytest.raises(SingularMatrixError):
+            lu_factor(A)
+
+    def test_wrong_b_shape(self) -> None:
+        A = np.eye(3)
+        fact = lu_factor(A)
+        b = np.array([1.0, 2.0])
+        with pytest.raises(InvalidInputError, match="shape"):
+            lu_solve(fact, b)
