@@ -19,6 +19,7 @@ dev = [
     "pytest-cov",
     "ruff",
     "mypy",
+    "scipy>=1.11",
 ]
 app = [
     "streamlit>=1.30",

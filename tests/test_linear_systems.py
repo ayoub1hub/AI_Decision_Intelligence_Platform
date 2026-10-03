@@ -1,0 +1,138 @@
+"""Tests for linear system solvers."""
+
+from __future__ import annotations
+
+import numpy as np
+import pytest
+from scipy.linalg import solve as scipy_solve
+
+from numerical_lab.core import InvalidInputError, SingularMatrixError
+from numerical_lab.linear_systems import gauss_solve
+
+
+# ======================================================================
+# Basic correctness
+# ======================================================================
+class TestGaussBasic:
+    def test_2x2_system(self) -> None:
+        A = np.array([[2.0, 1.0], [1.0, 3.0]])
+        b = np.array([3.0, 4.0])
+        res = gauss_solve(A, b)
+        assert np.allclose(res.solution, [1.0, 1.0])
+
+    def test_3x3_system(self) -> None:
+        A = np.array(
+            [
+                [2.0, 1.0, -1.0],
+                [-3.0, -1.0, 2.0],
+                [-2.0, 1.0, 2.0],
+            ]
+        )
+        b = np.array([8.0, -11.0, -3.0])
+        res = gauss_solve(A, b)
+        assert np.allclose(res.solution, [2.0, 3.0, -1.0])
+
+    def test_identity(self) -> None:
+        A = np.eye(5)
+        b = np.arange(1.0, 6.0)
+        res = gauss_solve(A, b)
+        assert np.allclose(res.solution, b)
+
+    def test_matches_scipy(self) -> None:
+        """Compare against scipy.linalg.solve on random matrices."""
+        rng = np.random.default_rng(42)
+        for n in [3, 5, 10, 20]:
+            A = rng.standard_normal((n, n)) + n * np.eye(n)  # well-conditioned
+            b = rng.standard_normal(n)
+            ours = gauss_solve(A, b)
+            ref = scipy_solve(A, b)
+            assert np.allclose(ours.solution, ref, atol=1e-9)
+
+    def test_result_metadata(self) -> None:
+        A = np.eye(3)
+        b = np.ones(3)
+        res = gauss_solve(A, b)
+        assert res.converged
+        assert res.iterations == 3
+        assert res.n_eval > 0
+        assert res.elapsed >= 0
+        assert isinstance(res.info, dict)
+
+
+# ======================================================================
+# Pivoting
+# ======================================================================
+class TestGaussPivoting:
+    def test_requires_pivot_swap(self) -> None:
+        """First pivot is 0 → must swap rows to proceed."""
+        A = np.array([[0.0, 1.0], [1.0, 0.0]])
+        b = np.array([2.0, 3.0])
+        res = gauss_solve(A, b)
+        assert np.allclose(res.solution, [3.0, 2.0])
+        assert len(res.info["swaps"]) == 1
+
+    def test_pivot_swap_improves_stability(self) -> None:
+        """Classic example where naive Gauss fails but pivoting succeeds."""
+        eps = 1e-16
+        A = np.array([[eps, 1.0], [1.0, 1.0]])
+        b = np.array([1.0, 2.0])
+        res = gauss_solve(A, b)
+        ref = scipy_solve(A, b)
+        assert np.allclose(res.solution, ref, atol=1e-9)
+
+
+# ======================================================================
+# Error handling
+# ======================================================================
+class TestGaussErrors:
+    def test_non_square_matrix(self) -> None:
+        A = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+        b = np.array([1.0, 2.0])
+        with pytest.raises(InvalidInputError, match="must be square"):
+            gauss_solve(A, b)
+
+    def test_incompatible_b(self) -> None:
+        A = np.eye(3)
+        b = np.array([1.0, 2.0])
+        with pytest.raises(InvalidInputError, match="shape"):
+            gauss_solve(A, b)
+
+    def test_singular_matrix(self) -> None:
+        """Rank-deficient matrix → SingularMatrixError."""
+        A = np.array([[1.0, 2.0], [2.0, 4.0]])  # row2 = 2 * row1
+        b = np.array([1.0, 2.0])
+        with pytest.raises(SingularMatrixError):
+            gauss_solve(A, b)
+
+    def test_negative_tolerance(self) -> None:
+        A = np.eye(2)
+        b = np.ones(2)
+        with pytest.raises(InvalidInputError, match="tol must be positive"):
+            gauss_solve(A, b, tol=-1.0)
+
+
+# ======================================================================
+# Numerical robustness
+# ======================================================================
+class TestGaussRobustness:
+    def test_hilbert_matrix(self) -> None:
+        """Hilbert matrices are famously ill-conditioned."""
+        from scipy.linalg import hilbert
+
+        n = 5
+        A = hilbert(n)
+        x_true = np.ones(n)
+        b = A @ x_true
+        res = gauss_solve(A, b)
+        # Ill-conditioned → on tolère une erreur plus grande
+        assert np.allclose(res.solution, x_true, atol=1e-3)
+
+    def test_diagonally_dominant(self) -> None:
+        rng = np.random.default_rng(0)
+        n = 10
+        A = rng.standard_normal((n, n))
+        A += n * np.eye(n)  # strongly diagonally dominant
+        x_true = rng.standard_normal(n)
+        b = A @ x_true
+        res = gauss_solve(A, b)
+        assert np.allclose(res.solution, x_true, atol=1e-10)
