@@ -1,0 +1,36 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# === Data ===
+**/data/raw/*
+**/data/processed/*
+**/data/external/*
+!**/data/raw/.gitkeep
+!**/data/processed/.gitkeep
+!**/data/external/.gitkeep
+
+# === Logs ===
+**/logs/*
+!**/logs/.gitkeep
+
+# === IDE ===
+.vscode/
+.idea/
+.DS_Store
+
+# === Secrets ===
+.env
+*.key
+*.pem
+
+# === Temporaires ===
+*.tmp
+*.bak
