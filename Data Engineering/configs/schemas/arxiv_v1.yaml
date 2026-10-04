@@ -1,0 +1,30 @@
+# Schéma minimal arXiv v1
+columns:
+  - name: id
+    dtype: string
+    required: true
+    unique: true
+
+  - name: title
+    dtype: string
+    required: true
+
+  - name: abstract
+    dtype: string
+    required: true
+
+  - name: authors
+    dtype: string
+    required: false
+
+  - name: categories
+    dtype: string
+    required: false
+
+  - name: published_date
+    dtype: datetime
+    required: false
+
+  - name: updated_date
+    dtype: datetime
+    required: false

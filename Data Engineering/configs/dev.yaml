@@ -1,0 +1,25 @@
+# Configuration de développement
+environment: dev
+
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  input_file: "arxiv_sample.csv"
+  output_file: "arxiv_clean.parquet"
+  dtypes:
+    id: "string"
+    authors: "string"
+    categories: "string"
+  parse_dates:
+    - published_date
+    - updated_date
+
+schema:
+  path: "configs/schemas/arxiv_v1.yaml"
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+  datefmt: "%Y-%m-%d %H:%M:%S"
+  log_file: "logs/pipeline.log"
+
