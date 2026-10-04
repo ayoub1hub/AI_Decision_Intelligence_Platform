@@ -9,7 +9,9 @@ from data_engine.config import load_config
 from data_engine.ingestion.csv_loader import load_csv
 from data_engine.logging_config import setup_logging
 from data_engine.quality.report import build_report, save_report
+from data_engine.storage.sql_store import save_to_duckdb
 from data_engine.transformation.cleaning import clean_basic
+from data_engine.transformation.features import engineer_features
 from data_engine.validation.checks import run_checks
 from data_engine.validation.schema import load_schema, validate
 
@@ -57,13 +59,22 @@ def run_pipeline(config_path: str | Path = "configs/dev.yaml") -> dict:
     required = [c.name for c in schema.columns if c.required]
     df_clean = clean_basic(df, required_columns=required)
 
-    # 7. Storage
+    # 7. Feature engineering
+    df_features = engineer_features(df_clean)
+    logger.info("Features: %s", list(df_features.columns))
+
+    # 8. Storage — Parquet
     out_path = Path(cfg.data.processed_dir) / cfg.data.output_file
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    df_clean.to_parquet(out_path, index=False)
+    df_features.to_parquet(out_path, index=False)
     logger.info("Saved processed data to %s", out_path)
 
-    # 8. Report
+    # 9. Storage — DuckDB
+    db_path = out_path.with_suffix(".db")
+    save_to_duckdb(df_features, db_path, table="papers")
+    logger.info("Saved to DuckDB: %s", db_path)
+
+    # 10. Report
     report_md = build_report(schema_report, quality_report, pipeline_status="success")
     report_path = Path("logs") / "quality_report.md"
     save_report(report_md, report_path)
@@ -72,8 +83,9 @@ def run_pipeline(config_path: str | Path = "configs/dev.yaml") -> dict:
     return {
         "status": "success",
         "rows_in": len(df),
-        "rows_out": len(df_clean),
-        "output": str(out_path),
+        "rows_out": len(df_features),
+        "output_parquet": str(out_path),
+        "output_db": str(db_path),
         "report": str(report_path),
     }
 
