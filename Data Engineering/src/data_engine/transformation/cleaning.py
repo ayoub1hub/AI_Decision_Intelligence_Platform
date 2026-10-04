@@ -48,7 +48,8 @@ def clean_basic(
     n0 = len(df)
 
     if strip_strings:
-        for col in df.select_dtypes(include="object").columns:
+        text_cols = df.select_dtypes(include=["object", "string", "str"]).columns
+        for col in text_cols:
             df[col] = df[col].astype(str).str.strip()
 
     if drop_duplicates:

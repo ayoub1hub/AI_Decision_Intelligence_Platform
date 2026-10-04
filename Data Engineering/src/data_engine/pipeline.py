@@ -8,7 +8,7 @@ from pathlib import Path
 from data_engine.config import load_config
 from data_engine.ingestion.csv_loader import load_csv
 from data_engine.logging_config import setup_logging
-from data_engine.quality.report import build_report, save_report
+from data_engine.quality.report import build_html_report, build_report, save_report
 from data_engine.storage.sql_store import save_to_duckdb
 from data_engine.transformation.cleaning import clean_basic
 from data_engine.transformation.features import engineer_features
@@ -74,19 +74,26 @@ def run_pipeline(config_path: str | Path = "configs/dev.yaml") -> dict:
     save_to_duckdb(df_features, db_path, table="papers")
     logger.info("Saved to DuckDB: %s", db_path)
 
-    # 10. Report
+    # 10. Reports (Markdown + HTML)
     report_md = build_report(schema_report, quality_report, pipeline_status="success")
     report_path = Path("logs") / "quality_report.md"
     save_report(report_md, report_path)
 
+    report_html = build_html_report(schema_report, quality_report, pipeline_status="success")
+    html_path = Path("logs") / "quality_report.html"
+    save_report(report_html, html_path)
+
+    logger.info("Reports saved: %s, %s", report_path, html_path)
     logger.info("Pipeline completed successfully")
+
     return {
         "status": "success",
         "rows_in": len(df),
         "rows_out": len(df_features),
         "output_parquet": str(out_path),
         "output_db": str(db_path),
-        "report": str(report_path),
+        "report_md": str(report_path),
+        "report_html": str(html_path),
     }
 
 
