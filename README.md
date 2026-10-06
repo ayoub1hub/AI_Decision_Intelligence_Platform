@@ -21,8 +21,8 @@ A unified platform for building end-to-end AI systems, from numerical foundation
 | # | Module | Description | Status |
 |---|---|---|---|
 | 1 | [Numerical Computing Lab](./Numerical%20Computing%20Lab/) | From-scratch numerical methods | ✅ Terminé |
-| 2 | [Data Engineering](./Data%20Engineering/) | Data Intelligence Pipeline | 🚧 En cours |
-| 3 | NLP | Natural Language Processing | ⏳ À venir |
+| 2 | [Data Engineering](./Data%20Engineering/) | Data Intelligence Pipeline | ✅ Terminé |
+| 3 | NLP | Natural Language Processing | 🚧 En cours |
 | 4 | Knowledge Base | Structured knowledge | ⏳ À venir |
 | 5 | RAG | Retrieval-Augmented Generation | ⏳ À venir |
 | 6 | Machine Learning | Classical ML | ⏳ À venir |
