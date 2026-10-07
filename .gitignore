@@ -34,3 +34,7 @@ venv/
 # === Temporaires ===
 *.tmp
 *.bak
+
+# === Models (regenerable) ===
+**/models/*
+!**/models/.gitkeep
