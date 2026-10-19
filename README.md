@@ -23,7 +23,7 @@ A unified platform for building end-to-end AI systems, from numerical foundation
 | 1 | [Numerical Computing Lab](./Numerical%20Computing%20Lab/) | From-scratch numerical methods | ✅ Terminé |
 | 2 | [Data Engineering](./Data%20Engineering/) | Data Intelligence Pipeline | ✅ Terminé |
 | 3 | [NLP](./NLP/) | Natural Language Processing | ✅ Terminé |
-| 4 | Knowledge Base | Structured knowledge | 🚧 En cours |
+| 4 | Knowledge Base | Structured knowledge | ⏳ À venir |
 | 5 | RAG | Retrieval-Augmented Generation | ⏳ À venir |
 | 6 | Machine Learning | Classical ML | ⏳ À venir |
 | 7 | Computer Vision | Image processing | ⏳ À venir |
@@ -49,5 +49,37 @@ cd AI_Decision_Intelligence_Platform
 
 ## Status
 
-- **Numerical Computing Lab** — 9 numerical methods, 83 tests, benchmarked vs SciPy
-- **Data Engineering** — J1 complete (CSV ingestion, validation, cleaning, Parquet storage)
+### ✅ Numerical Computing Lab
+
+- 9 numerical methods: root finding (Dichotomy, Newton, Secant), linear systems (Gauss, LU, Jacobi, Gauss-Seidel), ODE (Euler, RK4, RK45)
+- **83 tests**, benchmarked against SciPy
+- Convergence order validated empirically (Dichotomy ~1, Newton ~2, Secant ~1.618)
+
+### ✅ Data Engineering
+
+- Full pipeline: CSV/API ingestion → schema validation → cleaning → feature engineering
+- Storage: **Parquet** + **DuckDB** (dual)
+- CLI: `run`, `download-arxiv`, `query`
+- **31 tests**, HTML quality reports, GitHub Actions CI
+
+### ✅ NLP
+
+- Preprocessing: HTML/URLs/LaTeX removal, tokenization, lemmatization
+- Vectorization: **TF-IDF** (sparse) + **BERT embeddings** (dense, all-MiniLM-L6-v2)
+- Classification: arXiv category prediction (5 classes) — **SVM 78% accuracy with BERT**
+- Clustering: KMeans topic discovery on BERT embeddings
+- Semantic search: FAISS index for retrieval
+- **65 tests**, TF-IDF vs BERT comparison (BERT +5% accuracy)
+
+## Tech Stack
+
+| Layer | Tools |
+|---|---|
+| **Numerical** | NumPy, SciPy (for validation only) |
+| **Data** | Pandas, PyArrow, DuckDB, Pydantic |
+| **NLP** | NLTK, scikit-learn, Sentence Transformers, FAISS |
+| **Dev** | pytest, ruff, mypy, GitHub Actions |
+
+## License
+
+MIT (or your choice)
