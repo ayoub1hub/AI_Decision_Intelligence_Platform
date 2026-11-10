@@ -1,0 +1,24 @@
+# RAG dev configuration
+environment: dev
+
+llm:
+  provider: groq
+  model: openai/gpt-oss-20b
+  temperature: 0.0
+  max_tokens: 512
+  api_key_env: GROQ_API_KEY
+
+retriever:
+  index_path: "data/index/arxiv.faiss"
+  embeddings_cache: "data/processed/arxiv_embeddings.npz"
+  top_k: 5
+  model_name: "all-MiniLM-L6-v2"
+
+data:
+  arxiv_csv: "data/raw/arxiv_labeled.csv"
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+  datefmt: "%Y-%m-%d %H:%M:%S"
+  log_file: "logs/rag.log"

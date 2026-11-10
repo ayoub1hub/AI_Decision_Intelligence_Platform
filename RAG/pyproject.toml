@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rag-engine"
+version = "0.1.0"
+description = "Retrieval-Augmented Generation module for AI Decision Intelligence Platform"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "pyyaml>=6.0",
+    "pydantic>=2.0",
+    "faiss-cpu>=1.7",
+    "sentence-transformers>=3.0",
+    "openai>=1.0",              # used for Groq (compatible API) and OpenAI
+    "groq>=0.11",               # Groq client (optional, openai works too)
+    "tenacity>=8.0",            # retry logic for API calls
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov",
+    "ruff",
+    "mypy",
+]
+ollama = [
+    "ollama>=0.3",              # local LLM (optional)
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "llm: marks tests that call a real LLM API",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
