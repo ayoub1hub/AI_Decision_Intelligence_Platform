@@ -2,37 +2,50 @@
 
 Retrieval-Augmented Generation module for the **AI Decision Intelligence Platform**.
 
+Combines **FAISS-based retrieval** over arXiv papers with **LLM-based generation**, producing **grounded answers with inline citations**.
+
 ## Pipeline
+User question
+│
+▼
+┌────────────────────────────────────────────────────┐
+│ 1. RETRIEVE (FAISS) │ ← top-k papers from 205 arXiv abstracts
+│ BERT embeddings │
+└────────────────────────────────────────────────────┘
+│
+▼
+┌────────────────────────────────────────────────────┐
+│ 2. PROMPT BUILDER │ ← context + question + rules
+│ System + Context + Q │
+└────────────────────────────────────────────────────┘
+│
+▼
+┌────────────────────────────────────────────────────┐
+│ 3. GENERATE (LLM) │ ← Groq / OpenAI / Ollama
+│ Grounded answer │
+└────────────────────────────────────────────────────┘
+│
+▼
+Answer with sources [1], [2], ...
 
-```
-Question → Retrieve (FAISS) → Generate (LLM) → Answer
-```
-
-## Quick Start
-
-```bash
-pip install -e ".[dev]"
-python -m rag_engine ask "What is a transformer?"
-```
+text
 
 ## Features
 
-- **Retrieval**: FAISS-based semantic search over arXiv papers
-- **Generation**: LLM-agnostic (Groq, OpenAI, Ollama)
-- **Evaluation**: Faithfulness, relevance, context precision
+- **Retrieval**: FAISS semantic search over 205 arXiv papers (BERT embeddings, 384-dim)
+- **Generation**: unified client for **Groq**, **OpenAI**, and **Ollama** (one API, three backends)
+- **Citations**: answers cite sources inline as `[1]`, `[2]`, ... matching the retrieved docs
+- **Prompt engineering**: system prompt enforces "answer only from context" and "say I don't know if not in context"
+- **CLI**: `ask`, `search`, `build-index` — all via `python -m rag_engine`
+- **Retry logic**: tenacity with exponential backoff for LLM calls
+- **Tests**: unit + pipeline tests, all mocked (no API calls in CI)
+- **Python 3.12** compatible
 
-## Structure
+## Quick Start
 
-- `src/rag_engine/retriever/` — FAISS index + retrieval
-- `src/rag_engine/generator/` — LLM client + prompt templates
-- `src/rag_engine/pipeline.py` — orchestrator
-- `scripts/` — build index, ask
-- `tests/` — unit + integration tests
+### 1. Install
 
-## LLM Providers
-
-| Provider | Cost | Speed | Setup |
-|---|---|---|---|
-| **Groq** | Free | Very fast | API key |
-| **OpenAI** | Paid | Fast | API key |
-| **Ollama** | Free | Slow (CPU) | Local install |
+```bash
+cd RAG
+pip install -e ".[dev]"
+```
