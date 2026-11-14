@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -18,12 +18,8 @@ from rag_engine.retriever import RetrievedDoc
 def mock_retriever() -> MagicMock:
     retriever = MagicMock()
     retriever.retrieve.return_value = [
-        RetrievedDoc(
-            index=0, score=0.9, title="Paper A", abstract="About A.", label="cs.LG"
-        ),
-        RetrievedDoc(
-            index=1, score=0.8, title="Paper B", abstract="About B.", label="cs.CV"
-        ),
+        RetrievedDoc(index=0, score=0.9, title="Paper A", abstract="About A.", label="cs.LG"),
+        RetrievedDoc(index=1, score=0.8, title="Paper B", abstract="About B.", label="cs.CV"),
     ]
     return retriever
 
@@ -45,9 +41,7 @@ def mock_llm() -> MagicMock:
 # Tests
 # ----------------------------------------------------------------------
 class TestRAGPipeline:
-    def test_ask_returns_answer(
-        self, mock_retriever: MagicMock, mock_llm: MagicMock
-    ) -> None:
+    def test_ask_returns_answer(self, mock_retriever: MagicMock, mock_llm: MagicMock) -> None:
         pipeline = RAGPipeline(retriever=mock_retriever, llm=mock_llm, top_k=2)
         answer = pipeline.ask("What is A?")
 
@@ -68,9 +62,7 @@ class TestRAGPipeline:
         mock_retriever.retrieve.assert_called_once()
         mock_llm.generate.assert_called_once()
 
-    def test_ask_empty_results(
-        self, mock_llm: MagicMock
-    ) -> None:
+    def test_ask_empty_results(self, mock_llm: MagicMock) -> None:
         retriever = MagicMock()
         retriever.retrieve.return_value = []
 
@@ -82,18 +74,14 @@ class TestRAGPipeline:
         # LLM should NOT be called if no docs
         mock_llm.generate.assert_not_called()
 
-    def test_ask_passes_label_filter(
-        self, mock_retriever: MagicMock, mock_llm: MagicMock
-    ) -> None:
+    def test_ask_passes_label_filter(self, mock_retriever: MagicMock, mock_llm: MagicMock) -> None:
         pipeline = RAGPipeline(retriever=mock_retriever, llm=mock_llm, top_k=2)
         pipeline.ask("Q", label_filter="cs.LG")
 
         call_kwargs = mock_retriever.retrieve.call_args.kwargs
         assert call_kwargs["label_filter"] == "cs.LG"
 
-    def test_ask_overrides_top_k(
-        self, mock_retriever: MagicMock, mock_llm: MagicMock
-    ) -> None:
+    def test_ask_overrides_top_k(self, mock_retriever: MagicMock, mock_llm: MagicMock) -> None:
         pipeline = RAGPipeline(retriever=mock_retriever, llm=mock_llm, top_k=5)
         pipeline.ask("Q", top_k=3)
 

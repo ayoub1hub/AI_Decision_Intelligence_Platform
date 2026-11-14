@@ -18,9 +18,9 @@ from pathlib import Path
 
 from rag_engine.config import Config, load_config
 from rag_engine.generator import LLMClient, build_rag_prompt
-from rag_engine.retriever import Retriever, RetrievedDoc
+from rag_engine.retriever import RetrievedDoc, Retriever
 
-__all__ = ["RAGPipeline", "RAGAnswer"]
+__all__ = ["RAGAnswer", "RAGPipeline"]
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class RAGPipeline:
         self.top_k = top_k
 
     @classmethod
-    def from_config(cls, config_path: str | Path = "configs/dev.yaml") -> "RAGPipeline":
+    def from_config(cls, config_path: str | Path = "configs/dev.yaml") -> RAGPipeline:
         """Build a pipeline from a YAML config file."""
         cfg: Config = load_config(config_path)
 

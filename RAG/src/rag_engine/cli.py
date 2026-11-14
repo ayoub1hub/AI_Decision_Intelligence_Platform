@@ -11,7 +11,6 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
-from pathlib import Path
 
 from rag_engine.config import load_config
 from rag_engine.logging_config import setup_logging
@@ -42,10 +41,7 @@ def cmd_ask(args: argparse.Namespace) -> int:
     print(answer.text)
     print()
     print("─" * 70)
-    print(
-        f"Tokens: {answer.tokens_in} in, "
-        f"{answer.tokens_out} out ({answer.tokens_total} total)"
-    )
+    print(f"Tokens: {answer.tokens_in} in, {answer.tokens_out} out ({answer.tokens_total} total)")
     print()
     print("Sources:")
     for i, doc in enumerate(answer.sources, 1):
@@ -91,7 +87,7 @@ def cmd_build_index(args: argparse.Namespace) -> int:
         index_path=cfg.retriever.index_path,
     )
 
-    print(f"\n✅ Index built")
+    print("\n✅ Index built")
     print(f"   Vectors   : {index.ntotal}")
     print(f"   Dimensions: {index.d}")
     print(f"   Metadata  : {len(df)} rows")
@@ -104,9 +100,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="rag_engine",
         description="RAG engine CLI",
     )
-    parser.add_argument(
-        "--config", default="configs/dev.yaml", help="Path to config file"
-    )
+    parser.add_argument("--config", default="configs/dev.yaml", help="Path to config file")
     sub = parser.add_subparsers(dest="command", required=True)
 
     # ask
