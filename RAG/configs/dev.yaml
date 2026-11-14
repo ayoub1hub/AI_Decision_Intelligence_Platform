@@ -5,13 +5,13 @@ llm:
   provider: groq
   model: openai/gpt-oss-20b
   temperature: 0.0
-  max_tokens: 512
+  max_tokens: 1024
   api_key_env: GROQ_API_KEY
 
 retriever:
   index_path: "data/index/arxiv.faiss"
   embeddings_cache: "data/processed/arxiv_embeddings.npz"
-  top_k: 5
+  top_k: 8
   model_name: "all-MiniLM-L6-v2"
 
 data:
